@@ -14,7 +14,7 @@ import subprocess
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
 sound_threshold = 50        # Sound detection threshold (RMS amplitude)
-no_activity_time_limit = 1  # No-activity time threshold (seconds)
+no_activity_time_limit = 20  # No-activity time threshold (seconds)
 
 # Video recording parameters
 video_fps = 10.0             # Video frame rate
@@ -61,7 +61,7 @@ def setup_paths():
 
 def initialize_camera():
     """Initialize the camera and set the resolution."""
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(0) # Run measure.py to check the camera index
     if not cap.isOpened():
         print("Error: Unable to access the camera.")
         return None
