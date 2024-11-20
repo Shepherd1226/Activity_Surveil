@@ -1,124 +1,88 @@
-# Motion Surveil
+# Activity_Surveil
 
-**Motion Surveil** is a Python-based project that automatically enables surveillance footage recording when motion is detected. It is designed for applications such as home security, wildlife monitoring, or general motion-triggered recording systems.
+**Activity_Surveil** is a Python-based project that enables motion and sound-triggered surveillance recording. It is designed as a practice project for creating a complete system and is not intended for production use. **Please do not take it seriously.**
 
 ---
 
 ## Features
 
-- **Automatic Motion Detection**: Records video when motion is detected.
-- **Configurable Thresholds**: Adjustable parameters for motion sensitivity and recording behavior.
-- **High-Resolution Support**: Supports testing and setting maximum camera resolution and frame rates.
-- **Platform Compatibility**: Works on Windows and Linux platforms.
-- **Video Management**: Saves video recordings in a structured date-based folder system.
-- **Record Videos Using Your Computer Camera**: Utilize your computer's camera for testing and recording purposes.
+- **Motion and Sound Detection**: Triggers recording when motion or sound surpasses configurable thresholds.
+- **Dual Recording Modes**: Captures both video and audio simultaneously.
+- **Configurable Parameters**: Adjustable sensitivity for motion and sound thresholds.
+- **Platform Compatibility**: Works on Windows, Linux, and macOS platforms.
 
 ---
 
 ## Requirements
 
-Ensure you have the following dependencies installed. The project includes a `requirements.txt` for easy setup.
+Set up the environment using the included `environment.yml` file.
 
-- Python 3.7+
-- OpenCV (`cv2`)
-- NumPy
-- argparse
+1. Install Conda if you haven’t already.
+2. Create a Conda environment:
 
-To install dependencies, run:
+   ```bash
+   conda env create -f environment.yml
+   ```
 
-```bash
-pip install -r requirements.txt
-```
+3. Activate the environment:
+
+   ```bash
+   conda activate Surveillance
+   ```
 
 ---
 
 ## Usage
 
-### Running the Program
+### Testing Camera and Audio Capabilities
 
-1. **Testing Camera Capabilities**:
-   Use `measure.py` to test the maximum resolution and frame rate supported by your camera.
+1. Run `measure.py` to test the camera's resolution, frame rate, and audio device capabilities:
 
    ```bash
    python measure.py
    ```
 
-2. **Motion Detection and Recording**:
-   Use `record.py` to enable motion-triggered video recording.
+### Activity Detection and Recording
+
+1. Run `record.py` to start motion and sound-triggered recording:
 
    ```bash
    python record.py [-s]
    ```
 
-   - `-s` or `--show`: (Optional) Show the camera feed in a window. You can press ESC to exit.
+   - `-s` or `--show`: (Optional) Display the camera feed. Press ESC to exit.
 
 ---
 
 ## Configuration
 
-You can configure the following parameters directly in the `record.py` script:
+You can adjust the following parameters in `record.py` to suit your needs:
 
-- `motion_threshold`: Minimum motion area (in pixels) to trigger recording.
-- `no_motion_time_limit`: Time (in seconds) after which recording stops if no motion is detected.
-- `video_fps`: Frame rate for the recorded video.
-- `resolution`: Camera resolution (width, height) for recording.
-- `output_format`: File format for saving videos (e.g., `mp4`).
-- `codec_windows` and `codec_linux`: Codec used for encoding videos depending on the platform.
+### Motion and Sound Detection
 
----
+- **`motion_threshold`**: Minimum pixel area for motion detection.
+- **`sound_threshold`**: RMS amplitude threshold for sound detection.
+- **`no_activity_time_limit`**: Time (in seconds) to stop recording if no motion or sound is detected.
 
-## How It Works
+### Video Settings
 
-1. **Motion Detection**:
-   - Detects motion using frame differencing, grayscale conversion, Gaussian blurring, and contour detection.
-   - Starts recording when motion surpasses the defined threshold.
+- **`video_fps`**: Frame rate of the video.
+- **`resolution`**: Resolution (width, height) for recording.
+- **`output_format`**: File format for the recorded video (e.g., `mp4`).
 
-2. **Recording Management**:
-   - Saves recordings in a folder structure based on the current date.
-   - Stops recording if no motion is detected for the specified time limit.
+### Audio Settings
 
-3. **Camera Capability Testing**:
-   - `measure.py` attempts to query and display the camera's maximum resolution and frame rate.
-
----
-
-## File Structure
-
-- `measure.py`: Tests and displays maximum camera resolution and frame rates.
-- `record.py`: Main script for motion detection and recording.
-- `requirements.txt`: List of Python dependencies for the project.
-
----
-
-## Output
-
-Recorded videos are saved in the `videos` directory within subfolders named by the current date (e.g., `videos/20241120/`).
-
----
-
-## Notes
-
-- This project is **just a test** of the process of creating a complete project. **Please do not take it seriously.**
-- The recordings and functionality provided are for experimental purposes and should not be used as a finalized solution for surveillance needs.
-
----
-
-## Contributions
-
-Contributions are welcome! Feel free to fork the repository and submit pull requests.
+- **`CHUNK`**: Number of audio samples per buffer. Adjust this if audio and video are out of sync.
+- **`CHANNELS`**: Number of audio channels (e.g., stereo).
+- **`RATE`**: Sampling rate for audio recording.
 
 ---
 
 ## Troubleshooting
 
-- Ensure your camera is connected and accessible by OpenCV.
+- Ensure your camera and microphone are properly connected and accessible.
 - Check permissions for creating directories and saving files.
-- If `cv2.VideoWriter` fails, ensure you have the proper codec installed on your system.
+- If FFmpeg is not working, ensure it is installed and added to your system’s PATH.
+- If you experience audio-video synchronization problems, try adjusting the value of `CHUNK` in `record.py`.
 
 ---
-
-## Contact
-
-For questions or issues, please contact the project maintainer.
-
---- 
