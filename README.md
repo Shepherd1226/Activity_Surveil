@@ -9,6 +9,7 @@
 - **Motion and Sound Detection**: Triggers recording when motion or sound surpasses configurable thresholds.
 - **Dual Recording Modes**: Captures both video and audio simultaneously.
 - **Configurable Parameters**: Adjustable sensitivity for motion and sound thresholds.
+- **Hardware Capability Measuring**: Measure camera and microphone capabilities to help choose appropriate parameters.
 - **Platform Compatibility**: Works on Windows, Linux, and macOS platforms.
 
 ---
