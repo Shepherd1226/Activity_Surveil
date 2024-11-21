@@ -13,8 +13,8 @@ import subprocess
 # Adjustable Parameters
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
-sound_threshold = 50        # Sound detection threshold (RMS amplitude)
-no_activity_time_limit = 20  # No-activity time threshold (seconds)
+sound_threshold = 100        # Sound detection threshold (RMS amplitude)
+no_activity_time_limit = 10  # No-activity time threshold (seconds)
 
 # Video recording parameters
 video_fps = 10.0             # Video frame rate
@@ -84,9 +84,12 @@ def detect_sound(stream):
     try:
         data = stream.read(CHUNK, exception_on_overflow=False)
         data_int = np.frombuffer(data, dtype=np.int16)
-        if len(data_int) == 0 or not np.any(data_int):
+        if len(data_int) == 0 or (not np.any(data_int)):
             return False, data
-        rms = np.sqrt(np.mean(data_int ** 2))
+        mse = np.mean(data_int ** 2)
+        if not mse or mse<0:
+            return False, data
+        rms = np.sqrt(mse)
         return rms > sound_threshold, data
     except Exception as e:
         print("Audio capture error:", e)
