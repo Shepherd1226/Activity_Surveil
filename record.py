@@ -13,7 +13,7 @@ import subprocess
 # Adjustable Parameters
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
-sound_threshold = 100        # Sound detection threshold (RMS amplitude)
+sound_threshold = 80        # Sound detection threshold (RMS amplitude)
 no_activity_time_limit = 10  # No-activity time threshold (seconds)
 
 # Video recording parameters
@@ -130,7 +130,7 @@ def stop_recording(out, audio_frames, start_time_str, date_path, p):
     audio_filename = os.path.join(date_path, f"{start_time_str}_audio_temp.wav")
     wf = wave.open(audio_filename, 'wb')
     wf.setnchannels(CHANNELS)
-    wf.setsampwidth(p.get_sample_size(FORMAT))  # Ensure `p` is passed and used here
+    wf.setsampwidth(p.get_sample_size(FORMAT)) 
     wf.setframerate(RATE)
     wf.writeframes(b''.join(audio_frames))
     wf.close()
