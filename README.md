@@ -65,7 +65,7 @@ You can adjust the following parameters in `record.py` to suit your needs:
 - **`sound_threshold`**: RMS amplitude threshold for sound detection.
 - **`no_activity_time_limit`**: Time (in seconds) to stop recording if no motion or sound is detected.
 - **`trigger_method`**: Method to trigger recording: 'motion', 'sound', or 'either'.
-- **`record_content`**: Content to record: 'video', 'audio', or both.
+- **`record_content`**: Content to record: 'video', 'audio', or 'both'.
 
 ### Video Settings
 
@@ -75,9 +75,9 @@ You can adjust the following parameters in `record.py` to suit your needs:
 
 ### Audio Settings
 
-- **`CHUNK`**: Number of audio samples per buffer. Adjust this if audio and video are out of sync.
-- **`CHANNELS`**: Number of audio channels (e.g., stereo).
-- **`RATE`**: Sampling rate for audio recording.
+- **`chunk`**: Number of audio samples per buffer.
+- **`channels`**: Number of audio channels (e.g., stereo).
+- **`rate`**: Sampling rate for audio recording.
 
 ---
 
@@ -85,7 +85,7 @@ You can adjust the following parameters in `record.py` to suit your needs:
 
 - **Camera and Microphone Connection:** Ensure your camera and microphone are properly connected and accessible. Note that using WSL (Windows Subsystem for Linux) or a virtual machine may prevent proper connection to the camera.
   
-- **Audio-Video Synchronization:** If you experience audio-video synchronization problems, try adjusting the value of `CHUNK` in `record.py`.
+- **Audio-Video Synchronization:** If you experience audio-video synchronization problems, try adjusting the value of `chunk` in `record.py`. Smaller chunks mean higher frequency function calls, which might conflict with the video recording process.
 
 - **Permissions Issues:** Check permissions for creating directories and saving files.
 

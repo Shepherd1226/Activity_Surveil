@@ -13,7 +13,7 @@ import subprocess
 # Adjustable Parameters
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
-sound_threshold = 85         # Sound detection threshold (RMS amplitude)
+sound_threshold = 75         # Sound detection threshold (RMS amplitude)
 no_activity_time_limit = 10  # No-activity time threshold (seconds)
 trigger_method = 'either'    # Trigger method: 'motion', 'sound', or 'either'
 record_content = 'both'      # Record content: 'video', 'audio', or 'both'
@@ -27,10 +27,10 @@ codec_linux = 'mp4v'         # Video codec for Linux
 codec_mac = 'avc1'           # Video codec for macOS
 
 # Audio recording parameters
-CHUNK = 4096                 # Number of audio samples per buffer
-FORMAT = pyaudio.paInt16     # Audio format (16-bit PCM)
-CHANNELS = 2                 # Number of audio channels (stereo)
-RATE = 44100                 # Sampling rate (Hz)
+chunk = 4096                 # Number of audio samples per buffer
+format = pyaudio.paInt16     # Audio format (16-bit PCM)
+channels = 2                 # Number of audio channels (stereo)
+rate = 44100                 # Sampling rate (Hz)
 # ==========================
 
 def parse_arguments():
@@ -56,10 +56,13 @@ def setup_paths():
     """Set up the directory paths for saving videos."""
     current_path = os.path.dirname(os.path.abspath(__file__))
     today_str = datetime.datetime.now().strftime('%Y%m%d')
-    date_path = os.path.join(current_path, 'videos', today_str)
-    if not os.path.exists(date_path):
-        os.makedirs(date_path)
-    return date_path
+    temp_path = os.path.join(current_path, 'recordings', 'temp')
+    recordings_path = os.path.join(current_path, 'recordings', today_str)
+    if not os.path.exists(temp_path):
+        os.makedirs(temp_path)
+    if not os.path.exists(recordings_path):
+        os.makedirs(recordings_path)
+    return temp_path, recordings_path
 
 def initialize_camera():
     """Initialize the camera and set the resolution."""
@@ -74,17 +77,17 @@ def initialize_camera():
 def initialize_audio():
     """Initialize PyAudio and open the audio stream."""
     p = pyaudio.PyAudio()
-    stream = p.open(format=FORMAT,
-                    channels=CHANNELS,
-                    rate=RATE,
+    stream = p.open(format=format,
+                    channels=channels,
+                    rate=rate,
                     input=True,
-                    frames_per_buffer=CHUNK)
+                    frames_per_buffer=chunk)
     return p, stream
 
 def detect_sound(stream):
     """Read audio data from the stream and detect sound based on RMS amplitude."""
     try:
-        data = stream.read(CHUNK, exception_on_overflow=False)
+        data = stream.read(chunk, exception_on_overflow=False)
         data_int = np.frombuffer(data, dtype=np.int16)
         if len(data_int) == 0 or (not np.any(data_int)):
             return False, data
@@ -111,39 +114,49 @@ def detect_motion(frame1, frame2):
             return True
     return False
 
-def start_recording(codec, date_path):
+def start_recording(codec, temp_path, p):
     """Start recording by initializing VideoWriter and resetting audio frames."""
     start_time = datetime.datetime.now()
     start_time_str = start_time.strftime("%Y%m%d_%H%M%S")
-    video_filename = os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}")
-    fourcc = cv2.VideoWriter_fourcc(*codec)
-    out = cv2.VideoWriter(video_filename, fourcc, video_fps, resolution)
     print(f"Recording started: {start_time_str}")
-    audio_frames = []
-    return out, start_time_str, audio_frames
+    
+    video_filename = None
+    audio_filename = None
+    out = None
+    wf = None
+    
+    if record_content in ['video', 'both']:
+        video_filename = os.path.join(temp_path, f"{start_time_str}_video_temp.{output_format}")
+        fourcc = cv2.VideoWriter_fourcc(*codec)
+        out = cv2.VideoWriter(video_filename, fourcc, video_fps, resolution)
+    
+    if record_content in ['audio', 'both']:
+        audio_filename = os.path.join(temp_path, f"{start_time_str}_audio_temp.wav")
+        wf = wave.open(audio_filename, 'wb')
+        wf.setnchannels(channels)
+        wf.setsampwidth(p.get_sample_size(format))
+        wf.setframerate(rate)
+    
+    return out, start_time_str, wf, video_filename, audio_filename
 
-def stop_recording(out, audio_frames, start_time_str, date_path, p):
+def stop_recording(out, wf, start_time_str, recordings_path, p, video_filename, audio_filename):
     """Stop recording, save audio, combine audio and video, and clean up temporary files."""
-    out.release()
+    if out:
+        out.release()
+    if wf:
+        wf.close()
+    
     end_time = datetime.datetime.now()
     end_time_str = end_time.strftime("%Y%m%d_%H%M%S")
-    
-    # Save audio data to .wav file
-    audio_filename = os.path.join(date_path, f"{start_time_str}_audio_temp.wav")
-    wf = wave.open(audio_filename, 'wb')
-    wf.setnchannels(CHANNELS)
-    wf.setsampwidth(p.get_sample_size(FORMAT)) 
-    wf.setframerate(RATE)
-    wf.writeframes(b''.join(audio_frames))
-    wf.close()
+    print(f"Recording stopped: {end_time_str}")
     
     if record_content == 'both':
         # Combine audio and video using FFmpeg
-        final_filename = os.path.join(date_path, f"{start_time_str}_{end_time_str}.{output_format}")
+        final_filename = os.path.join(recordings_path, f"{start_time_str}_{end_time_str}.{output_format}")
         ffmpeg_command = [
             'ffmpeg',
             '-y',
-            '-i', os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"),
+            '-i', video_filename,
             '-i', audio_filename,
             '-c:v', 'copy',
             '-c:a', 'aac',
@@ -153,16 +166,14 @@ def stop_recording(out, audio_frames, start_time_str, date_path, p):
         subprocess.run(ffmpeg_command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         
         # Remove temporary files
-        os.remove(os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"))
+        os.remove(video_filename)
         os.remove(audio_filename)
     elif record_content == 'video':
-        final_filename = os.path.join(date_path, f"{start_time_str}_{end_time_str}.{output_format}")
-        os.rename(os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"), final_filename)
-        os.remove(audio_filename)
+        final_filename = os.path.join(recordings_path, f"{start_time_str}_{end_time_str}.{output_format}")
+        os.rename(video_filename, final_filename)
     elif record_content == 'audio':
-        final_filename = os.path.join(date_path, f"{start_time_str}_{end_time_str}.wav")
+        final_filename = os.path.join(recordings_path, f"{start_time_str}_{end_time_str}.wav")
         os.rename(audio_filename, final_filename)
-        os.remove(os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"))
 
     return final_filename, end_time_str
 
@@ -174,11 +185,10 @@ def display_frame(show_window, frame):
             return False
     return True
 
-def cleanup(recording, out, audio_frames, start_time_str, date_path, p, stream, cap):
+def cleanup(recording, out, wf, start_time_str, recordings_path, p, stream, cap, video_filename, audio_filename):
     """Release all resources and handle any remaining recordings."""
     if recording:
-        final_filename, end_time_str = stop_recording(out, audio_frames, start_time_str, date_path, p)
-        print(f"Recording stopped: {end_time_str}")
+        final_filename, end_time_str = stop_recording(out, wf, start_time_str, recordings_path, p, video_filename, audio_filename)
     
     # Close audio stream and terminate PyAudio
     stream.stop_stream()
@@ -200,7 +210,7 @@ def main():
     fourcc = cv2.VideoWriter_fourcc(*codec)
 
     # Set up paths for saving videos
-    date_path = setup_paths()
+    temp_path, recordings_path = setup_paths()
 
     # Initialize the camera
     cap = initialize_camera()
@@ -220,8 +230,10 @@ def main():
 
     last_activity_time = None  # Time of last detected motion or sound
     recording = False  # Is recording ongoing
-    audio_frames = []  # Audio data buffer
+    wf = None  # Audio file writer object
     out = None  # Video writer object
+    video_filename = ""  # Video file name
+    audio_filename = ""  # Audio file name
     start_time_str = ""  # Start time string
     print("Initialized successfully.")
 
@@ -238,17 +250,16 @@ def main():
                 last_activity_time = current_time  # Update the last activity detection time
                 if not recording:
                     # Start recording
-                    out, start_time_str, audio_frames = start_recording(codec, date_path)
+                    out, start_time_str, wf, video_filename, audio_filename = start_recording(codec, temp_path, p)
                     recording = True
 
             if recording:
-                out.write(frame1)  # Write the video frame
-                audio_frames.append(data)  # Append audio data
+                if out: out.write(frame1)  # Write the video frame
+                if wf: wf.writeframes(data)  # Write audio data to file
                 # Check if the no-activity time threshold has been exceeded
                 if last_activity_time and (current_time - last_activity_time > no_activity_time_limit):
                     # Stop recording
-                    final_filename, end_time_str = stop_recording(out, audio_frames, start_time_str, date_path, p)
-                    print(f"Recording stopped: {end_time_str}")
+                    final_filename, end_time_str = stop_recording(out, wf, start_time_str, recordings_path, p, video_filename, audio_filename)
                     recording = False
             else:
                 print("Standing by...", end="\r")
@@ -269,7 +280,7 @@ def main():
 
     finally:
         # Handle cleanup and ensure all resources are released
-        cleanup(recording, out, audio_frames, start_time_str, date_path, p, stream, cap)
+        cleanup(recording, out, wf, start_time_str, recordings_path, p, stream, cap, video_filename, audio_filename)
 
 if __name__ == "__main__":
     main()
