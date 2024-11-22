@@ -13,7 +13,7 @@ import subprocess
 # Adjustable Parameters
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
-sound_threshold = 1000         # Sound detection threshold (RMS amplitude)
+sound_threshold = 500         # Sound detection threshold (RMS amplitude)
 no_activity_time_limit = 10  # No-activity time threshold (seconds)
 trigger_method = 'either'    # Trigger method: 'motion', 'sound', or 'either'
 record_content = 'both'      # Record content: 'video', 'audio', or 'both'
@@ -306,14 +306,14 @@ def main():
                     recording = False
                 if debug_mode:
                     if trigger_method == 'sound':
-                        print(f"\rCurrent RMS: {rms}", end="\r")
+                        print(f"\rCurrent Sound: {rms}", end="\r")
                     elif trigger_method == 'motion':
-                        print(f"\rCurrent Motion Area: {motion_area}", end="\r")
+                        print(f"\rCurrent Motion: {motion_area}", end="\r")
                     elif trigger_method == 'either':
-                        print(f"\rCurrent RMS: {rms}, Current Motion Area: {motion_area}", end="\r")
+                        print(f"\rCurrent Sound: {rms}, Current Motion: {motion_area}", end="\r")
             else:
                 if debug_mode:
-                    print(f"\rCurrent RMS: {rms}, Current Motion Area: {motion_area}, Standing by...", end="\r")
+                    print(f"\rCurrent Sound: {rms}, Current Motion: {motion_area}, Standing by...", end="\r")
                 else:
                     print("Standing by...", end="\r")
 
