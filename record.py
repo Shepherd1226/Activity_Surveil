@@ -13,7 +13,7 @@ import subprocess
 # Adjustable Parameters
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
-sound_threshold = 75         # Sound detection threshold (RMS amplitude)
+sound_threshold = 1000         # Sound detection threshold (RMS amplitude)
 no_activity_time_limit = 10  # No-activity time threshold (seconds)
 trigger_method = 'either'    # Trigger method: 'motion', 'sound', or 'either'
 record_content = 'both'      # Record content: 'video', 'audio', or 'both'
@@ -118,9 +118,9 @@ def detect_sound(stream, debug_mode=False):
         data_int = np.frombuffer(data, dtype=np.int16)
         if len(data_int) == 0 or (not np.any(data_int)):
             return False, data, 0
-        mse = np.mean(data_int ** 2)
-        if not mse or mse < 0:
-            return False, data, 0
+        # Convert to float to prevent integer overflow
+        data_float = data_int.astype(np.float32)
+        mse = np.mean(data_float ** 2)
         rms = np.sqrt(mse)
         return rms > sound_threshold, data, int(rms)
     except Exception as e:

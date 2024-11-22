@@ -9,6 +9,7 @@
 - **Motion and Sound Detection**: Triggers recording when motion, sound, or either surpass configurable thresholds.
 - **Configurable Recording Modes**: Captures video, audio, or both simultaneously.
 - **Configurable Parameters**: Adjustable sensitivity for motion and sound thresholds.
+- **Real-time Threshold Monitoring**: Debug mode displays real-time sound and motion measurements for easy threshold adjustment.
 - **Hardware Capability Measuring**: Measure camera and microphone capabilities to help choose appropriate parameters.
 - **Platform Compatibility**: Works on Windows, Linux, and macOS platforms.
 
