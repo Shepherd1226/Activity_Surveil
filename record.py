@@ -25,6 +25,7 @@ output_format = 'mp4'        # Output video format, default MP4
 codec_windows = 'mp4v'       # Video codec for Windows
 codec_linux = 'mp4v'         # Video codec for Linux
 codec_mac = 'avc1'           # Video codec for macOS
+camera_index = 0             # Index of the camera to use, run measure.py to check
 
 # Audio recording parameters
 chunk = 4096                 # Number of audio samples per buffer
@@ -35,9 +36,35 @@ rate = 44100                 # Sampling rate (Hz)
 
 def parse_arguments():
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description="Motion and sound detection video recording script.")
+    parser = argparse.ArgumentParser(description="Activity surveillance script.")
     parser.add_argument('-s', '--show', action='store_true', help="Show the camera feed in a window.")
+    parser.add_argument('-d', '--debug', action='store_true', help="Enable debug mode with detailed output.")
     return parser.parse_args()
+
+def print_debug_info(system_name, codec):
+    """Print detailed debug information."""
+    print("Debug Mode Enabled")
+    print("Platform Information:")
+    print(f"{'Platform':<25} {system_name}")
+    print(f"{'Codec':<25} {codec}")
+    print("\nAdjustable Parameters:")
+    print(f"{'Parameter':<25} {'Value'}")
+    print(f"{'-'*25} {'-'*25}")
+    print(f"{'motion_threshold':<25} {motion_threshold}")
+    print(f"{'sound_threshold':<25} {sound_threshold}")
+    print(f"{'no_activity_time_limit':<25} {no_activity_time_limit}")
+    print(f"{'trigger_method':<25} {trigger_method}")
+    print(f"{'record_content':<25} {record_content}")
+    print(f"{'-'*25} {'-'*25}")
+    print(f"{'video_fps':<25} {video_fps}")
+    print(f"{'resolution':<25} {resolution}")
+    print(f"{'output_format':<25} {output_format}")
+    print(f"{'-'*25} {'-'*25}")
+    print(f"{'chunk':<25} {chunk}")
+    print(f"{'format':<25} {format}")
+    print(f"{'channels':<25} {channels}")
+    print(f"{'rate':<25} {rate}")
+    print(f"{'-'*25} {'-'*25}")
 
 def get_codec():
     """Determine the appropriate video codec based on the operating system."""
@@ -84,23 +111,23 @@ def initialize_audio():
                     frames_per_buffer=chunk)
     return p, stream
 
-def detect_sound(stream):
+def detect_sound(stream, debug_mode=False):
     """Read audio data from the stream and detect sound based on RMS amplitude."""
     try:
         data = stream.read(chunk, exception_on_overflow=False)
         data_int = np.frombuffer(data, dtype=np.int16)
         if len(data_int) == 0 or (not np.any(data_int)):
-            return False, data
+            return False, data, 0
         mse = np.mean(data_int ** 2)
-        if not mse or mse<0:
-            return False, data
+        if not mse or mse < 0:
+            return False, data, 0
         rms = np.sqrt(mse)
-        return rms > sound_threshold, data
+        return rms > sound_threshold, data, int(rms)
     except Exception as e:
         print("Audio capture error:", e)
-        return False, b''
+        return False, b'', 0
 
-def detect_motion(frame1, frame2):
+def detect_motion(frame1, frame2, debug_mode=False):
     """Detect motion between two consecutive frames."""
     diff = cv2.absdiff(frame1, frame2)
     gray = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
@@ -109,16 +136,25 @@ def detect_motion(frame1, frame2):
     dilated = cv2.dilate(thresh, None, iterations=3)
     contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     
+    max_area = 0
     for contour in contours:
-        if cv2.contourArea(contour) >= motion_threshold:
-            return True
-    return False
+        area = cv2.contourArea(contour)
+        if area >= motion_threshold:
+            return True, int(area)
+        if area > max_area:
+            max_area = int(area)
+    return False, max_area
 
-def start_recording(codec, temp_path, p):
+def start_recording(codec, temp_path, p, trigger_reason, debug_mode=False):
     """Start recording by initializing VideoWriter and resetting audio frames."""
     start_time = datetime.datetime.now()
     start_time_str = start_time.strftime("%Y%m%d_%H%M%S")
-    print(f"Recording started: {start_time_str}")
+    readable_start_time = start_time.strftime("%b %d, %Y %I:%M:%S %p")
+    if debug_mode:
+        readable_start_time = datetime.datetime.now().strftime("%b %d, %Y %I:%M:%S %p")
+        print(f"Activated: {readable_start_time}, by {trigger_reason}{' '*25}")
+    else:
+        print(f"Activated: {readable_start_time}{' '*25}")
     
     video_filename = None
     audio_filename = None
@@ -139,7 +175,7 @@ def start_recording(codec, temp_path, p):
     
     return out, start_time_str, wf, video_filename, audio_filename
 
-def stop_recording(out, wf, start_time_str, recordings_path, p, video_filename, audio_filename):
+def stop_recording(out, wf, start_time_str, recordings_path, p, video_filename, audio_filename, debug_mode=False):
     """Stop recording, save audio, combine audio and video, and clean up temporary files."""
     if out:
         out.release()
@@ -148,7 +184,8 @@ def stop_recording(out, wf, start_time_str, recordings_path, p, video_filename, 
     
     end_time = datetime.datetime.now()
     end_time_str = end_time.strftime("%Y%m%d_%H%M%S")
-    print(f"Recording stopped: {end_time_str}")
+    readable_end_time = end_time.strftime("%b %d, %Y %I:%M:%S %p")
+    print(f"Terminated: {readable_end_time}{' '*25}")
     
     if record_content == 'both':
         # Combine audio and video using FFmpeg
@@ -202,12 +239,17 @@ def main():
     # Parse command-line arguments
     args = parse_arguments()
     show_window = args.show
+    debug_mode = args.debug
 
     # Determine the platform to select appropriate codec
+    system_name = platform.system()
     codec = get_codec()
     if codec is None:
         return
     fourcc = cv2.VideoWriter_fourcc(*codec)
+
+    if debug_mode:
+        print_debug_info(system_name, codec)
 
     # Set up paths for saving videos
     temp_path, recordings_path = setup_paths()
@@ -240,8 +282,8 @@ def main():
     try:
         while cap.isOpened():
             # Detect activity based on motion and sound
-            sound_detected, data = detect_sound(stream)
-            motion = detect_motion(frame1, frame2)
+            sound_detected, data, rms = detect_sound(stream, debug_mode)
+            motion, motion_area = detect_motion(frame1, frame2, debug_mode)
             sound_detected = sound_detected and (trigger_method in ['sound', 'either'])
             motion = motion and (trigger_method in ['motion', 'either'])
             current_time = time.time()
@@ -250,7 +292,8 @@ def main():
                 last_activity_time = current_time  # Update the last activity detection time
                 if not recording:
                     # Start recording
-                    out, start_time_str, wf, video_filename, audio_filename = start_recording(codec, temp_path, p)
+                    trigger_reason = "sound" if sound_detected else "motion"
+                    out, start_time_str, wf, video_filename, audio_filename = start_recording(codec, temp_path, p, trigger_reason, debug_mode)
                     recording = True
 
             if recording:
@@ -259,10 +302,20 @@ def main():
                 # Check if the no-activity time threshold has been exceeded
                 if last_activity_time and (current_time - last_activity_time > no_activity_time_limit):
                     # Stop recording
-                    final_filename, end_time_str = stop_recording(out, wf, start_time_str, recordings_path, p, video_filename, audio_filename)
+                    final_filename, end_time_str = stop_recording(out, wf, start_time_str, recordings_path, p, video_filename, audio_filename, debug_mode)
                     recording = False
+                if debug_mode:
+                    if trigger_method == 'sound':
+                        print(f"\rCurrent RMS: {rms}", end="\r")
+                    elif trigger_method == 'motion':
+                        print(f"\rCurrent Motion Area: {motion_area}", end="\r")
+                    elif trigger_method == 'either':
+                        print(f"\rCurrent RMS: {rms}, Current Motion Area: {motion_area}", end="\r")
             else:
-                print("Standing by...", end="\r")
+                if debug_mode:
+                    print(f"\rCurrent RMS: {rms}, Current Motion Area: {motion_area}, Standing by...", end="\r")
+                else:
+                    print("Standing by...", end="\r")
 
             # Optional: Display video feed
             continue_running = display_frame(show_window, frame1)

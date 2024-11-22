@@ -48,10 +48,11 @@ Set up the environment using the included `environment.yml` file.
 1. Run `record.py` to start motion and sound-triggered recording:
 
    ```bash
-   python record.py [-s]
+   python record.py [-s] [-d]
    ```
 
    - `-s` or `--show`: (Optional) Display the camera feed. Press ESC to exit.
+   - `-d` or `--debug`: (Optional) Enable debug mode with detailed output.
 
 ---
 
