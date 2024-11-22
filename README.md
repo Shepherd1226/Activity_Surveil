@@ -81,9 +81,12 @@ You can adjust the following parameters in `record.py` to suit your needs:
 
 ## Troubleshooting
 
-- Ensure your camera and microphone are properly connected and accessible.
-- Check permissions for creating directories and saving files.
-- If FFmpeg is not working, ensure it is installed and added to your system’s PATH.
-- If you experience audio-video synchronization problems, try adjusting the value of `CHUNK` in `record.py`.
+- **Camera and Microphone Connection:** Ensure your camera and microphone are properly connected and accessible. Note that using WSL (Windows Subsystem for Linux) or a virtual machine may prevent proper connection to the camera.
+  
+- **Audio-Video Synchronization:** If you experience audio-video synchronization problems, try adjusting the value of `CHUNK` in `record.py`.
+
+- **Permissions Issues:** Check permissions for creating directories and saving files.
+
+- **FFmpeg Installation:** If FFmpeg is not working, ensure it is installed and added to your system’s PATH.
 
 ---
