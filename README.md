@@ -6,8 +6,8 @@
 
 ## Features
 
-- **Motion and Sound Detection**: Triggers recording when motion or sound surpasses configurable thresholds.
-- **Dual Recording Modes**: Captures both video and audio simultaneously.
+- **Motion and Sound Detection**: Triggers recording when motion, sound, or either surpass configurable thresholds.
+- **Configurable Recording Modes**: Captures video, audio, or both simultaneously.
 - **Configurable Parameters**: Adjustable sensitivity for motion and sound thresholds.
 - **Hardware Capability Measuring**: Measure camera and microphone capabilities to help choose appropriate parameters.
 - **Platform Compatibility**: Works on Windows, Linux, and macOS platforms.
@@ -64,6 +64,8 @@ You can adjust the following parameters in `record.py` to suit your needs:
 - **`motion_threshold`**: Minimum pixel area for motion detection.
 - **`sound_threshold`**: RMS amplitude threshold for sound detection.
 - **`no_activity_time_limit`**: Time (in seconds) to stop recording if no motion or sound is detected.
+- **`trigger_method`**: Method to trigger recording: 'motion', 'sound', or 'either'.
+- **`record_content`**: Content to record: 'video', 'audio', or both.
 
 ### Video Settings
 

@@ -13,8 +13,10 @@ import subprocess
 # Adjustable Parameters
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
-sound_threshold = 85        # Sound detection threshold (RMS amplitude)
+sound_threshold = 85         # Sound detection threshold (RMS amplitude)
 no_activity_time_limit = 10  # No-activity time threshold (seconds)
+trigger_method = 'either'    # Trigger method: 'motion', 'sound', or 'either'
+record_content = 'both'      # Record content: 'video', 'audio', or 'both'
 
 # Video recording parameters
 video_fps = 10.0             # Video frame rate
@@ -135,25 +137,34 @@ def stop_recording(out, audio_frames, start_time_str, date_path, p):
     wf.writeframes(b''.join(audio_frames))
     wf.close()
     
-    # Combine audio and video using FFmpeg
-    final_filename = os.path.join(date_path, f"{start_time_str}_{end_time_str}.{output_format}")
-    ffmpeg_command = [
-        'ffmpeg',
-        '-y',
-        '-i', os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"),
-        '-i', audio_filename,
-        '-c:v', 'copy',
-        '-c:a', 'aac',
-        '-strict', 'experimental',
-        final_filename
-    ]
-    subprocess.run(ffmpeg_command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    
-    # Remove temporary files
-    os.remove(os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"))
-    os.remove(audio_filename)
-    print(f"Recording saved: {end_time_str}")
-    return final_filename
+    if record_content == 'both':
+        # Combine audio and video using FFmpeg
+        final_filename = os.path.join(date_path, f"{start_time_str}_{end_time_str}.{output_format}")
+        ffmpeg_command = [
+            'ffmpeg',
+            '-y',
+            '-i', os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"),
+            '-i', audio_filename,
+            '-c:v', 'copy',
+            '-c:a', 'aac',
+            '-strict', 'experimental',
+            final_filename
+        ]
+        subprocess.run(ffmpeg_command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        
+        # Remove temporary files
+        os.remove(os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"))
+        os.remove(audio_filename)
+    elif record_content == 'video':
+        final_filename = os.path.join(date_path, f"{start_time_str}_{end_time_str}.{output_format}")
+        os.rename(os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"), final_filename)
+        os.remove(audio_filename)
+    elif record_content == 'audio':
+        final_filename = os.path.join(date_path, f"{start_time_str}_{end_time_str}.wav")
+        os.rename(audio_filename, final_filename)
+        os.remove(os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"))
+
+    return final_filename, end_time_str
 
 def display_frame(show_window, frame):
     """Display the current video frame if the show_window flag is True."""
@@ -166,36 +177,8 @@ def display_frame(show_window, frame):
 def cleanup(recording, out, audio_frames, start_time_str, date_path, p, stream, cap):
     """Release all resources and handle any remaining recordings."""
     if recording:
-        if out is not None:
-            out.release()
-        if audio_frames:
-            # Save any remaining audio data
-            audio_filename = os.path.join(date_path, f"{start_time_str}_audio_temp.wav")
-            wf = wave.open(audio_filename, 'wb')
-            wf.setnchannels(CHANNELS)
-            wf.setsampwidth(p.get_sample_size(FORMAT))
-            wf.setframerate(RATE)
-            wf.writeframes(b''.join(audio_frames))
-            wf.close()
-    
-            # Combine audio and video using FFmpeg
-            final_filename = os.path.join(date_path, f"{start_time_str}_end.{output_format}")
-            ffmpeg_command = [
-                'ffmpeg',
-                '-y',
-                '-i', os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"),
-                '-i', audio_filename,
-                '-c:v', 'copy',
-                '-c:a', 'aac',
-                '-strict', 'experimental',
-                final_filename
-            ]
-            subprocess.run(ffmpeg_command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    
-            # Remove temporary files
-            os.remove(os.path.join(date_path, f"{start_time_str}_video_temp.{output_format}"))
-            os.remove(audio_filename)
-            print(f"Recording saved: end")
+        final_filename, end_time_str = stop_recording(out, audio_frames, start_time_str, date_path, p)
+        print(f"Recording stopped: {end_time_str}")
     
     # Close audio stream and terminate PyAudio
     stream.stop_stream()
@@ -237,10 +220,9 @@ def main():
 
     last_activity_time = None  # Time of last detected motion or sound
     recording = False  # Is recording ongoing
-    out = None
-    audio_frames = []
-    start_time_str = ""
-
+    audio_frames = []  # Audio data buffer
+    out = None  # Video writer object
+    start_time_str = ""  # Start time string
     print("Initialized successfully.")
 
     try:
@@ -248,6 +230,8 @@ def main():
             # Detect activity based on motion and sound
             sound_detected, data = detect_sound(stream)
             motion = detect_motion(frame1, frame2)
+            sound_detected = sound_detected and (trigger_method in ['sound', 'either'])
+            motion = motion and (trigger_method in ['motion', 'either'])
             current_time = time.time()
 
             if motion or sound_detected:
@@ -263,7 +247,8 @@ def main():
                 # Check if the no-activity time threshold has been exceeded
                 if last_activity_time and (current_time - last_activity_time > no_activity_time_limit):
                     # Stop recording
-                    final_filename = stop_recording(out, audio_frames, start_time_str, date_path, p)
+                    final_filename, end_time_str = stop_recording(out, audio_frames, start_time_str, date_path, p)
+                    print(f"Recording stopped: {end_time_str}")
                     recording = False
             else:
                 print("Standing by...", end="\r")
