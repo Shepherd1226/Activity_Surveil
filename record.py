@@ -32,6 +32,7 @@ chunk = 4096                 # Number of audio samples per buffer
 format = pyaudio.paInt16     # Audio format (16-bit PCM)
 channels = 2                 # Number of audio channels (stereo)
 rate = 44100                 # Sampling rate (Hz)
+microphone_index = 0         # Index of the microphone to use, run measure.py to check
 # ==========================
 
 def parse_arguments():
@@ -41,7 +42,7 @@ def parse_arguments():
     parser.add_argument('-d', '--debug', action='store_true', help="Enable debug mode with detailed output.")
     return parser.parse_args()
 
-def print_debug_info(system_name, codec):
+def print_debug_info(system_name, codec, camera_name, microphone_name):
     """Print detailed debug information."""
     print("Debug Mode Enabled")
     print("Platform Information:")
@@ -59,11 +60,13 @@ def print_debug_info(system_name, codec):
     print(f"{'video_fps':<25} {video_fps}")
     print(f"{'resolution':<25} {resolution}")
     print(f"{'output_format':<25} {output_format}")
+    print(f"{'camera_backend_name':<25} {camera_name}")
     print(f"{'-'*25} {'-'*25}")
     print(f"{'chunk':<25} {chunk}")
     print(f"{'format':<25} {format}")
     print(f"{'channels':<25} {channels}")
     print(f"{'rate':<25} {rate}")
+    print(f"{'microphone_name':<25} {microphone_name}")
     print(f"{'-'*25} {'-'*25}")
 
 def get_codec():
@@ -91,24 +94,31 @@ def setup_paths():
         os.makedirs(recordings_path)
     return temp_path, recordings_path
 
-def initialize_camera():
+def initialize_camera(camera_index=0):
     """Initialize the camera and set the resolution."""
-    cap = cv2.VideoCapture(0) # Run measure.py to check the camera index
+    cap = cv2.VideoCapture(camera_index) # Run measure.py to check the camera index
     if not cap.isOpened():
-        print("Error: Unable to access the camera.")
+        print("Error: Unable to access the camera. Check the camera index.")
         return None
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
     return cap
 
-def initialize_audio():
+def initialize_audio(microphone_index=0):
     """Initialize PyAudio and open the audio stream."""
     p = pyaudio.PyAudio()
+    if p.get_device_count() < 1:
+        print("Error: No audio devices found.")
+        return None, None
     stream = p.open(format=format,
                     channels=channels,
                     rate=rate,
                     input=True,
+                    input_device_index=microphone_index,
                     frames_per_buffer=chunk)
+    if stream is None:
+        print("Error: Unable to open audio stream. Check the microphone index.")
+        return p, None
     return p, stream
 
 def detect_sound(stream, debug_mode=False):
@@ -250,19 +260,21 @@ def main():
         return
     fourcc = cv2.VideoWriter_fourcc(*codec)
 
+    # Initialize the camera and audio
+    cap = initialize_camera(camera_index)
+    p, stream = initialize_audio(microphone_index)
+    if cap is None or p is None:
+        return
+
+    # Get device names
+    camera_name = cap.getBackendName() if cap else "Unknown"
+    microphone_name = p.get_device_info_by_index(microphone_index).get('name', 'Unknown') if p else "Unknown"
+
     if debug_mode:
-        print_debug_info(system_name, codec)
+        print_debug_info(system_name, codec, camera_name, microphone_name)
 
     # Set up paths for saving videos
     temp_path, recordings_path = setup_paths()
-
-    # Initialize the camera
-    cap = initialize_camera()
-    if cap is None:
-        return
-    
-    # Initialize audio
-    p, stream = initialize_audio()
 
     # Initialize frames for motion detection
     ret, frame1 = cap.read()
@@ -308,14 +320,14 @@ def main():
                     recording = False
                 if debug_mode:
                     if trigger_method == 'sound':
-                        print(f"\rCurrent Sound: {rms}", end="\r")
+                        print(f"\rCurrent Sound: {rms}{' '*25}", end="\r")
                     elif trigger_method == 'motion':
-                        print(f"\rCurrent Motion: {motion_area}", end="\r")
+                        print(f"\rCurrent Motion: {motion_area}{' '*25}", end="\r")
                     elif trigger_method == 'either':
-                        print(f"\rCurrent Sound: {rms}, Current Motion: {motion_area}", end="\r")
+                        print(f"\rCurrent Sound: {rms}, Current Motion: {motion_area}{' '*25}", end="\r")
             else:
                 if debug_mode:
-                    print(f"\rCurrent Sound: {rms}, Current Motion: {motion_area}, Standing by...", end="\r")
+                    print(f"\rCurrent Sound: {rms}, Current Motion: {motion_area}, Standing by...{' '*25}", end="\r")
                 else:
                     print("Standing by...", end="\r")
 
