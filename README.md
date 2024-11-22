@@ -6,10 +6,10 @@
 
 ## Features
 
-- **Motion and Sound Detection**: Triggers recording when motion, sound, or either surpass configurable thresholds.
-- **Configurable Recording Modes**: Captures video, audio, or both simultaneously.
+- **Multiple Detection Modes**: Triggers recording when motion, sound, or either surpass thresholds.
+- **Multiple Recording Modes**: Captures video, audio, or both simultaneously.
 - **Configurable Parameters**: Adjustable sensitivity for motion and sound thresholds.
-- **Real-time Threshold Monitoring**: Debug mode displays real-time sound and motion measurements for easy threshold adjustment.
+- **Real-time Threshold Monitoring**: Provides debug mode displaying real-time sound and motion measurements for easy threshold adjustment.
 - **Hardware Capability Measuring**: Measure camera and microphone capabilities to help choose appropriate parameters.
 - **Platform Compatibility**: Works on Windows, Linux, and macOS platforms.
 
@@ -67,7 +67,7 @@ You can adjust the following parameters in `record.py` to suit your needs:
 - **`sound_threshold`**: RMS amplitude threshold for sound detection.
 - **`no_activity_time_limit`**: Time (in seconds) to stop recording if no motion or sound is detected.
 - **`trigger_method`**: Method to trigger recording: 'motion', 'sound', or 'either'.
-- **`record_content`**: Content to record: 'video', 'audio', or 'both'.
+- **`record_content`**: Content to record: 'video', 'audio', 'both', or 'none'.
 
 ### Video Settings
 

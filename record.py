@@ -13,10 +13,10 @@ import subprocess
 # Adjustable Parameters
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
-sound_threshold = 500         # Sound detection threshold (RMS amplitude)
+sound_threshold = 500        # Sound detection threshold (RMS amplitude)
 no_activity_time_limit = 10  # No-activity time threshold (seconds)
 trigger_method = 'either'    # Trigger method: 'motion', 'sound', or 'either'
-record_content = 'both'      # Record content: 'video', 'audio', or 'both'
+record_content = 'both'      # Record content: 'video', 'audio', 'both' or 'none'
 
 # Video recording parameters
 video_fps = 10.0             # Video frame rate
@@ -211,6 +211,8 @@ def stop_recording(out, wf, start_time_str, recordings_path, p, video_filename, 
     elif record_content == 'audio':
         final_filename = os.path.join(recordings_path, f"{start_time_str}_{end_time_str}.wav")
         os.rename(audio_filename, final_filename)
+    else: 
+        final_filename = None
 
     return final_filename, end_time_str
 
