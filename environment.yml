@@ -3,10 +3,11 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.10  # You can adjust this version based on your requirements
+  - python=3.10 
   - numpy       # NumPy for numerical computations
   - opencv      # OpenCV for video processing
   - pyaudio     # PyAudio for audio processing
+  - ffmpeg      # FFmpeg for audio and video processing
   - pip         # To support additional pip installations
   - pip:
-      - datetime  # Included as a pip install to ensure compatibility if needed
+      - datetime  # Included as a pip install to ensure compatibility

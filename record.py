@@ -13,7 +13,7 @@ import subprocess
 # Adjustable Parameters
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
-sound_threshold = 80        # Sound detection threshold (RMS amplitude)
+sound_threshold = 85        # Sound detection threshold (RMS amplitude)
 no_activity_time_limit = 10  # No-activity time threshold (seconds)
 
 # Video recording parameters
