@@ -16,7 +16,7 @@ motion_threshold = 30000     # Motion detection threshold (pixel area)
 sound_threshold = 1000       # Sound detection threshold (RMS amplitude)
 no_activity_time_limit = 10  # No-activity time threshold (seconds)
 trigger_method = 'either'    # Trigger method: 'motion', 'sound', or 'either'
-record_content = 'none'      # Record content: 'video', 'audio', 'both' or 'none'
+record_content = 'both'      # Record content: 'video', 'audio', 'both' or 'none'
 
 # Video recording parameters
 video_fps = 10.0             # Video frame rate
