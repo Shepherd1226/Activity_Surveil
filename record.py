@@ -13,7 +13,7 @@ import subprocess
 # Adjustable Parameters
 # ==========================
 motion_threshold = 30000     # Motion detection threshold (pixel area)
-sound_threshold = 500        # Sound detection threshold (RMS amplitude)
+sound_threshold = 1000        # Sound detection threshold (RMS amplitude)
 no_activity_time_limit = 10  # No-activity time threshold (seconds)
 trigger_method = 'either'    # Trigger method: 'motion', 'sound', or 'either'
 record_content = 'both'      # Record content: 'video', 'audio', 'both' or 'none'
@@ -32,7 +32,7 @@ chunk = 4096                 # Number of audio samples per buffer
 format = pyaudio.paInt16     # Audio format (16-bit PCM)
 channels = 2                 # Number of audio channels (stereo)
 rate = 44100                 # Sampling rate (Hz)
-microphone_index = 0         # Index of the microphone to use, run measure.py to check
+microphone_index = 13         # Index of the microphone to use, run measure.py to check
 # ==========================
 
 def parse_arguments():
@@ -324,10 +324,10 @@ def main():
                     elif trigger_method == 'motion':
                         print(f"\rCurrent Motion: {motion_area}{' '*25}", end="\r")
                     elif trigger_method == 'either':
-                        print(f"\rCurrent Sound: {rms}, Current Motion: {motion_area}{' '*25}", end="\r")
+                        print(f"\rCurrent Motion: {motion_area}, Sound: {rms}{' '*25}", end="\r")
             else:
                 if debug_mode:
-                    print(f"\rCurrent Sound: {rms}, Current Motion: {motion_area}, Standing by...{' '*25}", end="\r")
+                    print(f"\rCurrent Motion: {motion_area}, Sound: {rms}, Standing by...{' '*25}", end="\r")
                 else:
                     print("Standing by...", end="\r")
 
