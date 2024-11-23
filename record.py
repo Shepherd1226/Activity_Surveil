@@ -25,14 +25,14 @@ output_format = 'mp4'        # Output video format, default MP4
 codec_windows = 'mp4v'       # Video codec for Windows
 codec_linux = 'mp4v'         # Video codec for Linux
 codec_mac = 'avc1'           # Video codec for macOS
-camera_index = 0             # Index of the camera to use, run measure.py to check
+camera_index = None          # Index of the camera to use, run measure.py to check. Set to None for default
 
 # Audio recording parameters
 chunk = 4096                 # Number of audio samples per buffer
 format = pyaudio.paInt16     # Audio format (16-bit PCM)
 channels = 2                 # Number of audio channels (stereo)
 rate = 44100                 # Sampling rate (Hz)
-microphone_index = 13         # Index of the microphone to use, run measure.py to check
+microphone_index = None      # Index of the microphone to use, run measure.py to check. Set to None for default
 # ==========================
 
 def parse_arguments():
@@ -94,8 +94,10 @@ def setup_paths():
         os.makedirs(recordings_path)
     return temp_path, recordings_path
 
-def initialize_camera(camera_index=0):
+def initialize_camera(camera_index=None):
     """Initialize the camera and set the resolution."""
+    if camera_index is None:
+        camera_index = 0
     cap = cv2.VideoCapture(camera_index) # Run measure.py to check the camera index
     if not cap.isOpened():
         print("Error: Unable to access the camera. Check the camera index.")
@@ -104,12 +106,14 @@ def initialize_camera(camera_index=0):
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
     return cap
 
-def initialize_audio(microphone_index=0):
+def initialize_audio(microphone_index=None):
     """Initialize PyAudio and open the audio stream."""
     p = pyaudio.PyAudio()
     if p.get_device_count() < 1:
         print("Error: No audio devices found.")
         return None, None
+    if microphone_index is None:
+        microphone_index = p.get_default_input_device_info().get('index')
     stream = p.open(format=format,
                     channels=channels,
                     rate=rate,
@@ -268,7 +272,7 @@ def main():
 
     # Get device names
     camera_name = cap.getBackendName() if cap else "Unknown"
-    microphone_name = p.get_device_info_by_index(microphone_index).get('name', 'Unknown') if p else "Unknown"
+    microphone_name = p.get_device_info_by_index(microphone_index if microphone_index else p.get_default_input_device_info().get('index')).get('name', 'Unknown') if p else "Unknown"
 
     if debug_mode:
         print_debug_info(system_name, codec, camera_name, microphone_name)
